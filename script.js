@@ -1,8 +1,11 @@
 const scene = document.querySelector(".scene");
 const items = [...document.querySelectorAll(".item")];
+const isMobile = window.matchMedia("(max-width: 768px)");
 
 let currentStep = 0;
 let ticking = false;
+let touchStartX = 0;
+let touchEndX = 0;
 
 const progress = document.createElement("div");
 progress.className = "progress";
@@ -16,7 +19,15 @@ cornerYear.className = "corner-year";
 cornerYear.textContent = items[0]?.querySelector(".year")?.textContent || "";
 document.body.appendChild(cornerYear);
 
-function setActiveStep(nextStep) {
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+
+function updateYear() {
+  const year = items[currentStep]?.querySelector(".year")?.textContent || "";
+  cornerYear.textContent = year;
+}
+
+function setDesktopStep(nextStep) {
   if (nextStep === currentStep) return;
 
   const currentItem = items[currentStep];
@@ -39,11 +50,10 @@ function setActiveStep(nextStep) {
   });
 
   currentStep = nextStep;
-  cornerYear.textContent =
-    nextItem?.querySelector(".year")?.textContent || "";
+  updateYear();
 }
 
-function updateScene() {
+function updateDesktopScene() {
   const rect = scene.getBoundingClientRect();
   const windowHeight = window.innerHeight;
   const totalScroll = scene.offsetHeight - windowHeight;
@@ -57,34 +67,105 @@ function updateScene() {
     Math.floor(progressValue * stepCount)
   );
 
-  setActiveStep(nextStep);
+  setDesktopStep(nextStep);
   progressBar.style.width = `${progressValue * 100}%`;
-
-  items.forEach((item, index) => {
-    const distance = Math.abs(index - nextStep);
-    const img = item.querySelector("img");
-    if (!img) return;
-
-    const scale =
-      index === nextStep ? 1.015 : Math.max(0.94, 1 - distance * 0.03);
-
-    img.style.transform = `translate3d(0, ${index === nextStep ? -4 : 0}px, 0) scale(${scale})`;
-    item.style.zIndex = index === nextStep ? 3 : 1;
-  });
 
   ticking = false;
 }
 
-function requestTick() {
+function requestDesktopTick() {
   if (!ticking) {
-    requestAnimationFrame(updateScene);
+    requestAnimationFrame(updateDesktopScene);
     ticking = true;
   }
 }
 
-window.addEventListener("scroll", requestTick, { passive: true });
-window.addEventListener("resize", requestTick);
-window.addEventListener("load", () => {
-  items[0]?.classList.add("active");
-  requestTick();
-});
+function setMobileStep(index) {
+  currentStep = Math.max(0, Math.min(items.length - 1, index));
+
+  items.forEach((item, i) => {
+    item.classList.remove("active", "is-exiting", "mobile-visible");
+    if (i === currentStep) item.classList.add("mobile-visible");
+  });
+
+  updateYear();
+
+  if (prevBtn) prevBtn.disabled = currentStep === 0;
+  if (nextBtn) nextBtn.disabled = currentStep === items.length - 1;
+}
+
+function nextMobile() {
+  setMobileStep(currentStep + 1);
+}
+
+function prevMobile() {
+  setMobileStep(currentStep - 1);
+}
+
+function initDesktop() {
+  items.forEach((item, index) => {
+    item.classList.remove("mobile-visible");
+    item.classList.toggle("active", index === currentStep);
+    item.classList.remove("is-exiting");
+  });
+
+  progress.style.display = "";
+  cornerYear.style.display = "";
+  requestDesktopTick();
+}
+
+function initMobile() {
+  progress.style.display = "none";
+  cornerYear.style.display = "none";
+  setMobileStep(currentStep);
+}
+
+function applyMode() {
+  if (isMobile.matches) {
+    initMobile();
+  } else {
+    initDesktop();
+  }
+}
+
+window.addEventListener("scroll", () => {
+  if (!isMobile.matches) {
+    requestDesktopTick();
+  }
+}, { passive: true });
+
+window.addEventListener("resize", applyMode);
+window.addEventListener("load", applyMode);
+isMobile.addEventListener("change", applyMode);
+
+if (nextBtn) {
+  nextBtn.addEventListener("click", nextMobile);
+}
+
+if (prevBtn) {
+  prevBtn.addEventListener("click", prevMobile);
+}
+
+const stage = document.querySelector(".stage");
+
+if (stage) {
+  stage.addEventListener("touchstart", (e) => {
+    if (!isMobile.matches) return;
+    touchStartX = e.changedTouches[0].clientX;
+  }, { passive: true });
+
+  stage.addEventListener("touchend", (e) => {
+    if (!isMobile.matches) return;
+
+    touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+
+    if (Math.abs(diff) < 40) return;
+
+    if (diff > 0) {
+      nextMobile();
+    } else {
+      prevMobile();
+    }
+  }, { passive: true });
+}
