@@ -8,6 +8,9 @@ let ticking = false;
 let touchStartX = 0;
 let touchDeltaX = 0;
 
+/* =========================================
+   PROGRESS + YEAR
+========================================= */
 const progress = document.createElement("div");
 progress.className = "progress";
 progress.innerHTML = '<div class="progress-bar"></div>';
@@ -34,6 +37,9 @@ function updateButtons() {
   nextBtn.disabled = currentStep === items.length - 1;
 }
 
+/* =========================================
+   DESKTOP MODE
+========================================= */
 function setDesktopStep(nextStep) {
   if (nextStep === currentStep) return;
 
@@ -61,6 +67,8 @@ function setDesktopStep(nextStep) {
 }
 
 function updateDesktopScene() {
+  if (!scene || !items.length) return;
+
   const rect = scene.getBoundingClientRect();
   const windowHeight = window.innerHeight;
   const totalScroll = scene.offsetHeight - windowHeight;
@@ -74,7 +82,11 @@ function updateDesktopScene() {
   );
 
   setDesktopStep(nextStep);
-  progressBar.style.width = `${progressValue * 100}%`;
+
+  if (progressBar) {
+    progressBar.style.width = `${progressValue * 100}%`;
+  }
+
   ticking = false;
 }
 
@@ -85,6 +97,9 @@ function requestDesktopTick() {
   }
 }
 
+/* =========================================
+   MOBILE MODE
+========================================= */
 function setMobileStep(index, animate = true) {
   currentStep = Math.max(0, Math.min(items.length - 1, index));
 
@@ -92,14 +107,16 @@ function setMobileStep(index, animate = true) {
     if (!animate) {
       stageTrack.style.transition = "none";
     } else {
-      stageTrack.style.transition = "transform 0.75s cubic-bezier(0.22, 1, 0.36, 1)";
+      stageTrack.style.transition =
+        "transform 0.75s cubic-bezier(0.22, 1, 0.36, 1)";
     }
 
     stageTrack.style.transform = `translate3d(-${currentStep * 100}%, 0, 0)`;
 
     if (!animate) {
       requestAnimationFrame(() => {
-        stageTrack.style.transition = "transform 0.75s cubic-bezier(0.22, 1, 0.36, 1)";
+        stageTrack.style.transition =
+          "transform 0.75s cubic-bezier(0.22, 1, 0.36, 1)";
       });
     }
   }
@@ -124,6 +141,7 @@ function prevMobile() {
 function initDesktop() {
   progress.style.display = "";
   cornerYear.style.display = "";
+
   if (stageTrack) {
     stageTrack.style.transform = "";
     stageTrack.style.transition = "";
@@ -140,7 +158,7 @@ function initDesktop() {
 
 function initMobile() {
   progress.style.display = "none";
-  cornerYear.style.display = "";
+  cornerYear.style.display = "none";
   setMobileStep(currentStep, false);
 }
 
@@ -152,6 +170,9 @@ function applyMode() {
   }
 }
 
+/* =========================================
+   EVENT LISTENERS: DESKTOP / MOBILE
+========================================= */
 window.addEventListener(
   "scroll",
   () => {
@@ -162,7 +183,12 @@ window.addEventListener(
 
 window.addEventListener("resize", applyMode);
 window.addEventListener("load", applyMode);
-isMobile.addEventListener("change", applyMode);
+
+if (typeof isMobile.addEventListener === "function") {
+  isMobile.addEventListener("change", applyMode);
+} else if (typeof isMobile.addListener === "function") {
+  isMobile.addListener(applyMode);
+}
 
 if (nextBtn) nextBtn.addEventListener("click", nextMobile);
 if (prevBtn) prevBtn.addEventListener("click", prevMobile);
@@ -202,53 +228,133 @@ if (stageTrack) {
   );
 }
 
+/* =========================================
+   BACKGROUND MUSIC + MUTE / UNMUTE TOGGLE
+========================================= */
 const bgMusic = document.getElementById("bgMusic");
+const musicToggle = document.getElementById("musicToggle");
+const musicIcon = document.getElementById("musicIcon");
+
+const ICON_UNMUTE = "icons/unmute.png";
+const ICON_MUTE = "icons/mute.png";
+
+let isMuted = false;
+let fadeFrame = null;
+const targetVolume = 0.35;
+
+function setMusicIcon() {
+  if (!musicIcon) return;
+
+  if (isMuted) {
+    musicIcon.src = ICON_MUTE;
+    musicIcon.alt = "Music off";
+    if (musicToggle) {
+      musicToggle.setAttribute("aria-label", "Unmute music");
+    }
+  } else {
+    musicIcon.src = ICON_UNMUTE;
+    musicIcon.alt = "Music on";
+    if (musicToggle) {
+      musicToggle.setAttribute("aria-label", "Mute music");
+    }
+  }
+}
+
+function fadeAudio(to, duration = 2000, callback) {
+  if (!bgMusic) return;
+
+  if (fadeFrame) {
+    cancelAnimationFrame(fadeFrame);
+  }
+
+  const from = bgMusic.volume;
+  const start = performance.now();
+
+  function step(now) {
+    const progress = Math.min((now - start) / duration, 1);
+    bgMusic.volume = from + (to - from) * progress;
+
+    if (progress < 1) {
+      fadeFrame = requestAnimationFrame(step);
+    } else {
+      fadeFrame = null;
+      if (callback) callback();
+    }
+  }
+
+  fadeFrame = requestAnimationFrame(step);
+}
+
+async function startMusic() {
+  if (!bgMusic) return;
+
+  try {
+    if (bgMusic.paused) {
+      bgMusic.volume = 0;
+      await bgMusic.play();
+    }
+    fadeAudio(targetVolume, 2000);
+    isMuted = false;
+    setMusicIcon();
+  } catch (error) {
+    console.log("Autoplay diblokir. Menunggu interaksi user.");
+  }
+}
+
+function stopMusicWithFade(pauseAfterFade = true) {
+  if (!bgMusic) return;
+
+  fadeAudio(0, 2000, () => {
+    if (pauseAfterFade) {
+      bgMusic.pause();
+    }
+  });
+}
+
+function muteMusic() {
+  if (!bgMusic) return;
+
+  if (fadeFrame) {
+    cancelAnimationFrame(fadeFrame);
+    fadeFrame = null;
+  }
+
+  bgMusic.volume = 0;
+  bgMusic.pause();
+
+  isMuted = true;
+  setMusicIcon();
+}
+
+async function unmuteMusic() {
+  if (!bgMusic) return;
+
+  try {
+    if (fadeFrame) {
+      cancelAnimationFrame(fadeFrame);
+      fadeFrame = null;
+    }
+
+    bgMusic.volume = targetVolume;
+    await bgMusic.play();
+
+    isMuted = false;
+    setMusicIcon();
+  } catch (error) {
+    console.log("Gagal memutar musik.");
+  }
+}
 
 if (bgMusic) {
   bgMusic.volume = 0;
-
-  function fadeAudio(targetVolume, duration = 2000) {
-    const startVolume = bgMusic.volume;
-    const volumeChange = targetVolume - startVolume;
-    const startTime = performance.now();
-
-    function animateVolume(currentTime) {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-
-      bgMusic.volume = Math.max(
-        0,
-        Math.min(1, startVolume + volumeChange * progress)
-      );
-
-      if (progress < 1) {
-        requestAnimationFrame(animateVolume);
-      }
-    }
-
-    requestAnimationFrame(animateVolume);
-  }
-
-  async function startMusic() {
-    try {
-      await bgMusic.play();
-      fadeAudio(0.35, 2000);
-    } catch (error) {
-      // Autoplay mungkin diblokir browser
-      console.log("Autoplay diblokir. Menunggu interaksi user.");
-    }
-  }
-
-  function stopMusicWithFade() {
-    fadeAudio(0, 2000);
-  }
+  setMusicIcon();
 
   startMusic();
 
   document.addEventListener(
     "click",
     () => {
-      if (bgMusic.paused) {
+      if (bgMusic.paused && !isMuted) {
         startMusic();
       }
     },
@@ -257,17 +363,31 @@ if (bgMusic) {
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
-      stopMusicWithFade();
+      stopMusicWithFade(false);
     } else {
-      if (bgMusic.paused) {
-        bgMusic.play().then(() => fadeAudio(0.35, 2000)).catch(() => {});
-      } else {
-        fadeAudio(0.35, 2000);
+      if (!isMuted) {
+        if (bgMusic.paused) {
+          bgMusic.play().then(() => fadeAudio(targetVolume, 2000)).catch(() => {});
+        } else {
+          fadeAudio(targetVolume, 2000);
+        }
       }
     }
   });
 
   window.addEventListener("beforeunload", () => {
-    stopMusicWithFade();
+    stopMusicWithFade(false);
+  });
+}
+
+if (musicToggle) {
+  musicToggle.addEventListener("click", async () => {
+    if (!bgMusic) return;
+
+    if (isMuted || bgMusic.paused) {
+      await unmuteMusic();
+    } else {
+      muteMusic();
+    }
   });
 }

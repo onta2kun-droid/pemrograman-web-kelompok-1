@@ -422,3 +422,57 @@ body {
     display: none !important;
   }
 }
+
+.music-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 9999;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(199, 165, 106, 0.55);
+  border-radius: 999px;
+  background: rgba(199, 165, 106, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.22),
+    0 0 0 1px rgba(199, 165, 106, 0.08) inset;
+  transition:
+    transform 0.18s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.music-toggle:hover {
+  background: rgba(199, 165, 106, 0.24);
+  border-color: rgba(199, 165, 106, 0.72);
+}
+
+.music-toggle img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+}
+
+.music-toggle:active {
+  transform: scale(0.96);
+}
+
+@media (max-width: 768px) {
+  .music-toggle {
+    top: 14px;
+    right: 14px;
+    width: 42px;
+    height: 42px;
+  }
+
+  .music-toggle img {
+    width: 20px;
+    height: 20px;
+  }
+}
