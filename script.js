@@ -1,11 +1,12 @@
 const scene = document.querySelector(".scene");
 const items = [...document.querySelectorAll(".item")];
+const stageTrack = document.querySelector(".stage-track");
 const isMobile = window.matchMedia("(max-width: 768px)");
 
 let currentStep = 0;
 let ticking = false;
 let touchStartX = 0;
-let touchEndX = 0;
+let touchDeltaX = 0;
 
 const progress = document.createElement("div");
 progress.className = "progress";
@@ -23,8 +24,14 @@ const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 
 function updateYear() {
-  const year = items[currentStep]?.querySelector(".year")?.textContent || "";
-  cornerYear.textContent = year;
+  cornerYear.textContent =
+    items[currentStep]?.querySelector(".year")?.textContent || "";
+}
+
+function updateButtons() {
+  if (!prevBtn || !nextBtn) return;
+  prevBtn.disabled = currentStep === 0;
+  nextBtn.disabled = currentStep === items.length - 1;
 }
 
 function setDesktopStep(nextStep) {
@@ -45,7 +52,7 @@ function setDesktopStep(nextStep) {
 
   items.forEach((item, index) => {
     if (index !== nextStep && index !== currentStep) {
-      item.classList.remove("active", "is-exiting");
+      item.classList.remove("active", "is-exiting", "mobile-active");
     }
   });
 
@@ -61,15 +68,13 @@ function updateDesktopScene() {
   let progressValue = -rect.top / totalScroll;
   progressValue = Math.max(0, Math.min(1, progressValue));
 
-  const stepCount = items.length;
   const nextStep = Math.min(
-    stepCount - 1,
-    Math.floor(progressValue * stepCount)
+    items.length - 1,
+    Math.floor(progressValue * items.length)
   );
 
   setDesktopStep(nextStep);
   progressBar.style.width = `${progressValue * 100}%`;
-
   ticking = false;
 }
 
@@ -80,18 +85,32 @@ function requestDesktopTick() {
   }
 }
 
-function setMobileStep(index) {
+function setMobileStep(index, animate = true) {
   currentStep = Math.max(0, Math.min(items.length - 1, index));
 
+  if (stageTrack) {
+    if (!animate) {
+      stageTrack.style.transition = "none";
+    } else {
+      stageTrack.style.transition = "transform 0.75s cubic-bezier(0.22, 1, 0.36, 1)";
+    }
+
+    stageTrack.style.transform = `translate3d(-${currentStep * 100}%, 0, 0)`;
+
+    if (!animate) {
+      requestAnimationFrame(() => {
+        stageTrack.style.transition = "transform 0.75s cubic-bezier(0.22, 1, 0.36, 1)";
+      });
+    }
+  }
+
   items.forEach((item, i) => {
-    item.classList.remove("active", "is-exiting", "mobile-visible");
-    if (i === currentStep) item.classList.add("mobile-visible");
+    item.classList.toggle("mobile-active", i === currentStep);
+    item.classList.remove("active", "is-exiting");
   });
 
   updateYear();
-
-  if (prevBtn) prevBtn.disabled = currentStep === 0;
-  if (nextBtn) nextBtn.disabled = currentStep === items.length - 1;
+  updateButtons();
 }
 
 function nextMobile() {
@@ -103,21 +122,26 @@ function prevMobile() {
 }
 
 function initDesktop() {
+  progress.style.display = "";
+  cornerYear.style.display = "";
+  if (stageTrack) {
+    stageTrack.style.transform = "";
+    stageTrack.style.transition = "";
+  }
+
   items.forEach((item, index) => {
-    item.classList.remove("mobile-visible");
+    item.classList.remove("mobile-active");
     item.classList.toggle("active", index === currentStep);
     item.classList.remove("is-exiting");
   });
 
-  progress.style.display = "";
-  cornerYear.style.display = "";
   requestDesktopTick();
 }
 
 function initMobile() {
   progress.style.display = "none";
-  cornerYear.style.display = "none";
-  setMobileStep(currentStep);
+  cornerYear.style.display = "";
+  setMobileStep(currentStep, false);
 }
 
 function applyMode() {
@@ -128,44 +152,52 @@ function applyMode() {
   }
 }
 
-window.addEventListener("scroll", () => {
-  if (!isMobile.matches) {
-    requestDesktopTick();
-  }
-}, { passive: true });
+window.addEventListener(
+  "scroll",
+  () => {
+    if (!isMobile.matches) requestDesktopTick();
+  },
+  { passive: true }
+);
 
 window.addEventListener("resize", applyMode);
 window.addEventListener("load", applyMode);
 isMobile.addEventListener("change", applyMode);
 
-if (nextBtn) {
-  nextBtn.addEventListener("click", nextMobile);
-}
+if (nextBtn) nextBtn.addEventListener("click", nextMobile);
+if (prevBtn) prevBtn.addEventListener("click", prevMobile);
 
-if (prevBtn) {
-  prevBtn.addEventListener("click", prevMobile);
-}
+if (stageTrack) {
+  stageTrack.addEventListener(
+    "touchstart",
+    (e) => {
+      if (!isMobile.matches) return;
+      touchStartX = e.touches[0].clientX;
+      touchDeltaX = 0;
+    },
+    { passive: true }
+  );
 
-const stage = document.querySelector(".stage");
+  stageTrack.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!isMobile.matches) return;
+      touchDeltaX = e.touches[0].clientX - touchStartX;
+    },
+    { passive: true }
+  );
 
-if (stage) {
-  stage.addEventListener("touchstart", (e) => {
-    if (!isMobile.matches) return;
-    touchStartX = e.changedTouches[0].clientX;
-  }, { passive: true });
+  stageTrack.addEventListener(
+    "touchend",
+    () => {
+      if (!isMobile.matches) return;
 
-  stage.addEventListener("touchend", (e) => {
-    if (!isMobile.matches) return;
-
-    touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX - touchEndX;
-
-    if (Math.abs(diff) < 40) return;
-
-    if (diff > 0) {
-      nextMobile();
-    } else {
-      prevMobile();
-    }
-  }, { passive: true });
+      if (touchDeltaX < -50) {
+        nextMobile();
+      } else if (touchDeltaX > 50) {
+        prevMobile();
+      }
+    },
+    { passive: true }
+  );
 }
