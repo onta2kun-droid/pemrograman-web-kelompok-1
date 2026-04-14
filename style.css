@@ -416,3 +416,9 @@ body {
     min-height: 100svh;
   }
 }
+
+@media (max-width: 768px) {
+  .corner-year {
+    display: none !important;
+  }
+}
