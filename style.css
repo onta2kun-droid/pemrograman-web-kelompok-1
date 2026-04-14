@@ -389,3 +389,12 @@ body::before {
     contain: layout paint style;
   }
 }
+
+@supports (height: 100svh) {
+  .intro,
+  .outro,
+  .sticky {
+    min-height: 100svh;
+    height: 100svh;
+  }
+}

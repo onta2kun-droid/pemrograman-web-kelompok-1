@@ -2,6 +2,7 @@ const scene = document.querySelector(".scene");
 const items = [...document.querySelectorAll(".item")];
 
 let currentStep = 0;
+let ticking = false;
 
 const progress = document.createElement("div");
 progress.className = "progress";
@@ -38,9 +39,8 @@ function setActiveStep(nextStep) {
   });
 
   currentStep = nextStep;
-
-  const year = nextItem?.querySelector(".year")?.textContent || "";
-  cornerYear.textContent = year;
+  cornerYear.textContent =
+    nextItem?.querySelector(".year")?.textContent || "";
 }
 
 function updateScene() {
@@ -58,24 +58,33 @@ function updateScene() {
   );
 
   setActiveStep(nextStep);
-
   progressBar.style.width = `${progressValue * 100}%`;
 
   items.forEach((item, index) => {
     const distance = Math.abs(index - nextStep);
     const img = item.querySelector("img");
-
     if (!img) return;
 
-    const scale = index === nextStep ? 1.015 : Math.max(0.92, 1 - distance * 0.04);
-    img.style.transform = `translateY(${index === nextStep ? -4 : 0}px) scale(${scale})`;
+    const scale =
+      index === nextStep ? 1.015 : Math.max(0.94, 1 - distance * 0.03);
+
+    img.style.transform = `translate3d(0, ${index === nextStep ? -4 : 0}px, 0) scale(${scale})`;
     item.style.zIndex = index === nextStep ? 3 : 1;
   });
+
+  ticking = false;
 }
 
-window.addEventListener("scroll", updateScene, { passive: true });
-window.addEventListener("resize", updateScene);
+function requestTick() {
+  if (!ticking) {
+    requestAnimationFrame(updateScene);
+    ticking = true;
+  }
+}
+
+window.addEventListener("scroll", requestTick, { passive: true });
+window.addEventListener("resize", requestTick);
 window.addEventListener("load", () => {
   items[0]?.classList.add("active");
-  updateScene();
+  requestTick();
 });
