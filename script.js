@@ -201,3 +201,73 @@ if (stageTrack) {
     { passive: true }
   );
 }
+
+const bgMusic = document.getElementById("bgMusic");
+
+if (bgMusic) {
+  bgMusic.volume = 0;
+
+  function fadeAudio(targetVolume, duration = 2000) {
+    const startVolume = bgMusic.volume;
+    const volumeChange = targetVolume - startVolume;
+    const startTime = performance.now();
+
+    function animateVolume(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      bgMusic.volume = Math.max(
+        0,
+        Math.min(1, startVolume + volumeChange * progress)
+      );
+
+      if (progress < 1) {
+        requestAnimationFrame(animateVolume);
+      }
+    }
+
+    requestAnimationFrame(animateVolume);
+  }
+
+  async function startMusic() {
+    try {
+      await bgMusic.play();
+      fadeAudio(0.35, 2000);
+    } catch (error) {
+      // Autoplay mungkin diblokir browser
+      console.log("Autoplay diblokir. Menunggu interaksi user.");
+    }
+  }
+
+  function stopMusicWithFade() {
+    fadeAudio(0, 2000);
+  }
+
+  startMusic();
+
+  document.addEventListener(
+    "click",
+    () => {
+      if (bgMusic.paused) {
+        startMusic();
+      }
+    },
+    { once: true }
+  );
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      stopMusicWithFade();
+    } else {
+      if (bgMusic.paused) {
+        bgMusic.play().then(() => fadeAudio(0.35, 2000)).catch(() => {});
+      } else {
+        fadeAudio(0.35, 2000);
+      }
+    }
+  });
+
+  window.addEventListener("beforeunload", () => {
+    stopMusicWithFade();
+  });
+}
