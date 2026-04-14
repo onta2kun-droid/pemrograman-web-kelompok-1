@@ -240,7 +240,7 @@ const ICON_MUTE = "icons/mute.png";
 
 let isMuted = false;
 let fadeFrame = null;
-const targetVolume = 0.35;
+const targetVolume = 0.15;
 
 function setMusicIcon() {
   if (!musicIcon) return;
