@@ -1,0 +1,340 @@
+:root {
+  --bg: #15171c;
+  --bg-soft: #1c2027;
+  --bg-elevated: rgba(255, 255, 255, 0.04);
+  --text: #ece7de;
+  --muted: #b6aea2;
+  --line: rgba(255, 255, 255, 0.08);
+  --accent: #c9a96b;
+  --accent-soft: rgba(201, 169, 107, 0.18);
+  --shadow: 0 30px 80px rgba(0, 0, 0, 0.28);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(201, 169, 107, 0.05), transparent 30%),
+    radial-gradient(circle at 80% 25%, rgba(255, 255, 255, 0.04), transparent 28%),
+    linear-gradient(180deg, #17191e 0%, #1a1d23 45%, #17191d 100%);
+  color: var(--text);
+  overflow-x: hidden;
+  letter-spacing: 0.01em;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, rgba(255,255,255,0.015), transparent 20%, transparent 80%, rgba(0,0,0,0.06)),
+    radial-gradient(circle at center, transparent 55%, rgba(0,0,0,0.12) 100%);
+  z-index: 2;
+}
+
+.story {
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.intro,
+.outro {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+.intro-content,
+.outro-content {
+  max-width: 840px;
+  text-align: center;
+}
+
+.label {
+  margin: 0 0 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0.9;
+}
+
+.intro h1 {
+  margin: 0;
+  font-size: clamp(38px, 8vw, 90px);
+  line-height: 0.94;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.subtitle,
+.outro-content p {
+  margin: 22px auto 0;
+  max-width: 720px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(16px, 2vw, 21px);
+  line-height: 1.8;
+  color: var(--muted);
+}
+
+.scene {
+  position: relative;
+  height: 900vh;
+}
+
+.sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.005)),
+    linear-gradient(180deg, rgba(0,0,0,0.06), transparent 15%, transparent 85%, rgba(0,0,0,0.08));
+  backdrop-filter: blur(2px);
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.item {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(280px, 520px);
+  align-items: center;
+  gap: 3vw;
+  padding: 7vh 7vw;
+  opacity: 0;
+  transform: scale(0.94) translateY(40px);
+  filter: blur(10px);
+  transition:
+    opacity 0.95s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1.15s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 1s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.item.active {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  filter: blur(0);
+  pointer-events: auto;
+}
+
+.item.is-exiting {
+  opacity: 0;
+  transform: scale(1.03) translateY(-18px);
+  filter: blur(12px);
+}
+
+.item img {
+  width: 100%;
+  max-width: min(760px, 72vw);
+  max-height: 68vh;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  filter:
+    drop-shadow(0 30px 60px rgba(0, 0, 0, 0.25))
+    drop-shadow(0 6px 20px rgba(201, 169, 107, 0.08));
+  transform: translateY(0) scale(1);
+  transition:
+    transform 1.3s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 1s ease;
+}
+
+.item.active img {
+  transform: translateY(-4px) scale(1.015);
+}
+
+.caption {
+  max-width: 520px;
+  align-self: center;
+  padding: 30px 0;
+}
+
+.year {
+  position: relative;
+  margin-bottom: 14px;
+  padding-left: 42px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.year::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 26px;
+  height: 1px;
+  background: rgba(201, 169, 107, 0.7);
+  transform: translateY(-50%);
+}
+
+.caption h2 {
+  margin: 0;
+  font-size: clamp(34px, 5vw, 62px);
+  line-height: 0.98;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+
+.caption p {
+  margin: 18px 0 0;
+  max-width: 500px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(15px, 1.6vw, 19px);
+  line-height: 1.9;
+  color: var(--muted);
+}
+
+.outro {
+  position: relative;
+}
+
+.outro-content {
+  max-width: 760px;
+  padding: 40px 28px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+  border-radius: 28px;
+  box-shadow: var(--shadow);
+}
+
+.outro-content p {
+  margin: 0;
+}
+
+.progress {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  width: min(320px, calc(100vw - 40px));
+  height: 2px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.08);
+  z-index: 5;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.progress-bar {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(201, 169, 107, 0.45), rgba(201, 169, 107, 0.95));
+  box-shadow: 0 0 18px rgba(201, 169, 107, 0.2);
+  transition: width 0.25s ease;
+}
+
+.corner-year {
+  position: fixed;
+  left: 28px;
+  bottom: 24px;
+  z-index: 5;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(236, 231, 222, 0.62);
+}
+
+@media (max-width: 980px) {
+  .item {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    text-align: center;
+    padding: 6vh 22px 8vh;
+  }
+
+  .item img {
+    max-width: 82vw;
+    max-height: 42vh;
+  }
+
+  .caption {
+    max-width: 700px;
+    margin: 0 auto;
+    padding-top: 10px;
+  }
+
+  .year {
+    padding-left: 0;
+  }
+
+  .year::before {
+    display: none;
+  }
+
+  .caption p {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .corner-year {
+    left: 20px;
+    bottom: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .intro,
+  .outro {
+    padding: 32px 18px;
+  }
+
+  .intro h1 {
+    font-size: clamp(34px, 13vw, 56px);
+  }
+
+  .subtitle,
+  .outro-content p {
+    font-size: 15px;
+    line-height: 1.75;
+  }
+
+  .caption h2 {
+    font-size: clamp(30px, 10vw, 42px);
+  }
+
+  .caption p {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .progress {
+    bottom: 18px;
+  }
+
+  .corner-year {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+  }
+}
